@@ -1,20 +1,32 @@
 from flask import Flask, jsonify, request, send_from_directory, render_template
+from werkzeug.exceptions import NotFound
 from werkzeug.utils import secure_filename
 import os
-from pathlib import Path
+from os import listdir
+from os.path import isfile, join
 from dotenv import get_key
+from kenzie import create_files_directory_variable
+import logging
+logger = logging.getLogger('ftpuploader')
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'gif'}
 MAX_CONTENT_LENGTH = 1 * 1024 * 1024
 
-directory = get_key('./.env', 'FILES_DIRECTORY')
+
+create_files_directory_variable()
+
+
+# directory = get_key('./.env', 'FILES_DIRECTORY')
+directory = os.environ.get('FILES_DIRECTORY')
+
 app = Flask(__name__)
 
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
-  check_exists_file = Path(request.files["file"]).is_file()
+ 
+
   try:
     f = request.files["file"]
     filename_variable = f.filename
@@ -25,21 +37,19 @@ def upload_file():
     if png_file:
       path = './image/PNG'
       if_it_exists = os.path.exists(path)
-    
       if if_it_exists:
-        print('PNG exists') 
         f.save(f"./image/PNG/{f.filename}")
         return jsonify(f.filename), 201
       else:
         path = os.path.join(directory, 'PNG')
-        os.mkdir(path) 
+        os.mkdir(path)
         f.save(f"{directory}/PNG/{f.filename}")
         return jsonify(f.filename), 201
     elif jpg_file:
       path = './image/JPG'
       if_it_exists = os.path.exists(path)
       if if_it_exists:
-        print('JPG exists')   
+          
         f.save(f".image/JPG/{f.filename}")
         return jsonify(f.filename), 201
       else:
@@ -51,7 +61,7 @@ def upload_file():
       path = './image/GIF'
       if_it_exists = os.path.exists(path)
       if if_it_exists:
-        print('GIF exists')   
+           
         f.save(f".image/GIF/{f.filename}")
         return jsonify(f.filename), 201
       else:
@@ -59,98 +69,98 @@ def upload_file():
         os.mkdir(path) 
         f.save(f"{directory}/GIF/{f.filename}")
         return jsonify(f.filename), 201
+    
+    else:
+      return "File format not aloud", 415
   except KeyError as e:   
     return {'msg': str(e)}, 500      
-  except TypeError as e:
-    return {'msg': str(e)}, 409
-  # else:
-  #   return jsonify('Not an accepted file format'), 415 
-
-  #  f.save(f"{directory}/{f.filename}")
-  #  return jsonify('Foi')
-      
-
-
-
+  except FileNotFoundError:
+    return "File already exists", 409
+  except TypeError:
+    return "File format not aloud", 415
+ 
 
 
 @app.route('/files', methods=['GET'])
 def list_files():
-  ...
-# que irá listar todos os arquivos
+  list_all_files = []
+  def check_png_file_exists():
+    path = './image/PNG'
+    if_it_exists = os.path.exists(path)
+    if if_it_exists:
+      only_png_files = [f for f in listdir('./image/PNG') if isfile(join('./image/PNG', f))]
+      list_all_files.extend(only_png_files)
+  def check_jpg_file_exists():
+    path = './image/JPG'
+    if_it_exists = os.path.exists(path)
+    if if_it_exists:
+      only_jpg_files = [f for f in listdir('./image/JPG') if isfile(join('./image/JPG', f))]
+      list_all_files.extend(only_jpg_files)
+  def check_gif_file_exists():
+    path = "./image/GIF"
+    if_it_exists = os.path.exists(path)
+    if if_it_exists:
+      only_gif_files = [f for f in listdir('./image/GIF') if isfile(join('./image/GIF', f))]
+      list_all_files.extend(only_gif_files)
+  check_png_file_exists()
+  check_jpg_file_exists()
+  check_gif_file_exists()
+  return jsonify(list_all_files)
 
 
-@app.route('/files/<type>', methods=['GET'])
-def list_files_by_type():
-  ...
-# lista os arquivos de um determinado tipo
+
+@app.route('/files/<string:tipo>', methods=['GET'])
+def list_files_by_tipo(tipo: str):
+  path = "./image/GIF"
+  if_it_exists = os.path.exists(path)
+  check_png = "./image/PNG"
+  if_png = os.path.exists(check_png)
+  check_jpg = "./image/JPG"
+  if_jpg_exists = os.path.exists(check_jpg)
+  try:
+    incoming_tipo = tipo.lower()
+    
+    if incoming_tipo == 'png' and if_png:
+      only_png_files = [f for f in listdir('./image/PNG') if isfile(join('./image/PNG', f))]
+      return jsonify(only_png_files)
+ 
+    elif incoming_tipo == 'jpg' and if_jpg_exists:
+      only_jpg_files = [f for f in listdir('./image/JPG') if isfile(join('./image/JPG', f))]
+      return jsonify(only_jpg_files)
+    
+    elif incoming_tipo == 'gif' and if_it_exists:
+
+      only_gif_files = [f for f in listdir('./image/GIF') if isfile(join('./image/GIF', f))]
+      return jsonify(only_gif_files)
+    else:
+      return 'No files of that type were found', 404
+  except  TypeError:
+    return {'msg': 'Mensagem de erro'}, 400
+  except FileNotFoundError:
+    return {'Files of that format do not exist'}, 400
 
 
-@app.route('/download/<file_name>', methods=['GET'])
-def download():
-  ...
-# faz o download do arquivo solicitado em file_name
+
+@app.route("/download/<path:name>")
+def download_file(name):
+  try:
+    png_file = name.lower().endswith(('png'))
+    jpg_file = name.lower().endswith(('jpg'))
+    gif_file = name.lower().endswith(('gif'))
+    if png_file:
+      return send_from_directory(directory='../image/PNG', path=f"{name}", as_attachment=True)
+    elif jpg_file:
+      return send_from_directory(directory='../image/JPG', path=f"{name}", as_attachment=True)
+    else:
+      return send_from_directory(directory='../image/GIF', path=f"{name}", as_attachment=True)
+ 
+  except TypeError:
+    return 'That file does not exist', 404
+  except NotFound:
+    return 'That file does not exist', 404
+
 
 @app.route('/download-zip', methods=['GET'])
 def download_dir_as_zip():
   ...
-  # Utilizar o diretório /tmp do linux e a biblioteca os para executar um 
-# comando de terminal e gerar o arquivo zip temporariamente e fazer o 
-# download desse arquivo;
-  # zipar e salvar no tmp que está em Home 
-# com query_params-file_type, compression_rate
-# para especificar o tipo de arquivo para baixar todos
-# compactados e também a taxa de compressão
-
-# 6ª ROTA ?
-# @app.route('/static/<path:filename>', methods=['GET'])
-# def upload():
-#   ...
-# O QUE É PRA FAZER?
-
-# Specifies the maximum size (in bytes) of the files to be uploaded
-
-# If the uploaded file is too large, Flask will automatically return status code 413 Request Entity Too Large 
-
-# FILES_DIRECTORY- caminho principal aonde os arquivos são salvos - variável de ambiente
-
-# Regras e observações:
-# Cada tipo de arquivo é salvo em um subdiretório no diretório
-#  principal parametrizado;
-
-# O caminho do diretório principal onde os arquivos são salvos 
-# pode ser parametrizado por uma variável de ambiente FILES_DIRECTORY;
-
-# O tamanho máximo de arquivos deve ser parametrizado via variável 
-# de ambiente MAX_CONTENT_LENGTH e possuir o valor 1MB por padrão;
-
-# As operações sobre arquivos devem ser importadas de uma biblioteca
-#  (pacote) criada por você e chamada de kenzie, em um módulo chamado image;
-
-# Caso os diretórios necessários não existam, devem ser criados sempre 
-# que a aplicação iniciar. No __init__ do pacote.
-
-
-# Você pode utilizar os arquivos disponíveis para download no canvas para testar;
-
-# Utilizar padrão JSON para listar os arquivos;
-
-# Todos os erros devem ser tratados como exceções;
-
-# Os fluxos normais, devem ser os casos retornados sem ter captado nenhuma 
-# exceção na execução do código;
-
-
-
-# As funções do módulo image devem possuir docstrings que auxiliem a 
-# utilização;
-
-# As exceções devem gerar uma resposta com o status_code que mais faz 
-# sentido (Consulte a rubrica);
-
-# As operações com arquivos e diretórios não deve ser implementada 
-# dentro da rota. A lógica e tratamentos devem ser implementados na 
-# biblioteca e importado no app para utilizar nas rotas sempre que possível.
-
-# Tome o cuidado de adicionar uma regra para os arquivos de upload 
-# não serem adicionados ao repositório.
+ 
