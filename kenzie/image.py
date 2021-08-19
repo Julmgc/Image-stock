@@ -1,8 +1,12 @@
 import os
+import tempfile
+from zipfile import ZipFile
+import flask
 from os.path import isfile, join
 from flask import jsonify, request, send_from_directory
 from os import listdir
 from werkzeug.exceptions import NotFound
+
 directory = os.environ.get('FILES_DIRECTORY')
 
 def create_files_directory_variable():
@@ -10,7 +14,6 @@ def create_files_directory_variable():
     pass
   else:
     os.environ['FILES_DIRECTORY'] = './images-used'
-
 
 
 def upload_files_type():
@@ -66,6 +69,7 @@ def upload_files_type():
   except TypeError:
     return "File format not aloud", 415
 
+
 def get_all_files():
   list_all_files = []
   def check_png_file_exists():
@@ -90,6 +94,7 @@ def get_all_files():
   check_jpg_file_exists()
   check_gif_file_exists()
   return jsonify(list_all_files)
+
 
 def get_file_by_format(tipo):
   path = "./images-used/GIF"
@@ -120,6 +125,7 @@ def get_file_by_format(tipo):
   except FileNotFoundError:
     return {'Files of that format do not exist'}, 400
 
+
 def download_specific_file(name):
   try:
     png_file = name.lower().endswith(('png'))
@@ -136,3 +142,37 @@ def download_specific_file(name):
     return 'That file does not exist', 404
   except NotFound:
     return 'That file does not exist', 404
+
+
+def donwload_zip_format_files():
+  try:
+    type_file = request.args.get('file_type')
+    file_type_uppercase = type_file.upper()
+    rate_compression = int(request.args.get('compression_rate'))
+    list_files_type = []
+    directory =  f'./images-used/{file_type_uppercase}'
+    for filename in os.listdir(directory):
+      f = os.path.join(directory, filename)
+      if os.path.isfile(f):
+        list_files_type.append(f)
+
+    file_name = tempfile.NamedTemporaryFile(mode='w+b', delete=True)
+    zipObj = ZipFile(file_name, 'w',  compresslevel=rate_compression) 
+    for file in list_files_type:
+      zipObj.write(file)
+
+    zipObj.close()
+    
+    return flask.send_file(file_name.name, attachment_filename=file_name.name, as_attachment=True)
+
+  except FileNotFoundError:
+    return 'Directory currently empty', 404
+
+
+
+
+
+
+
+
+
