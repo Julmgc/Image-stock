@@ -1,10 +1,9 @@
 import os
-import tempfile
-from zipfile import ZipFile
 import flask
 from os.path import isfile, join
 from flask import jsonify, request, send_from_directory
 from os import listdir
+import os.path
 from werkzeug.exceptions import NotFound
 
 directory = os.environ.get('FILES_DIRECTORY')
@@ -25,6 +24,10 @@ def upload_files_type():
     jpg_file = filename_variable.lower().endswith(('jpg'))
     gif_file = filename_variable.lower().endswith(('gif'))
     if png_file:
+      if os.path.isfile(f'./images-used/PNG/{filename_variable}'):
+        return "File already exists", 409
+      else:
+        ...
       path = './images-used/PNG'
       if_it_exists = os.path.exists(path)
       if if_it_exists:
@@ -36,6 +39,10 @@ def upload_files_type():
         f.save(f"{directory}/PNG/{f.filename}")
         return jsonify(f.filename), 201
     elif jpg_file:
+      if os.path.isfile(f'./images-used/JPG/{filename_variable}'):
+        return "File already exists", 409
+      else:
+        ...
       path = './images-used/JPG'
       if_it_exists = os.path.exists(path)
       if if_it_exists:
@@ -48,6 +55,10 @@ def upload_files_type():
         f.save(f"{directory}/JPG/{f.filename}")
         return jsonify(f.filename), 201
     elif gif_file:
+      if os.path.isfile(f'./images-used/GIF/{filename_variable}'):
+        return "File already exists", 409
+      else:
+        ...
       path = './images-used/GIF'
       if_it_exists = os.path.exists(path)
       if if_it_exists:
@@ -67,7 +78,7 @@ def upload_files_type():
   except FileNotFoundError:
     return "File already exists", 409
   except TypeError:
-    return "File format not aloud", 415
+    return "File is bigger than 1MB", 413
 
 
 def get_all_files():
@@ -141,7 +152,7 @@ def download_specific_file(name):
   except TypeError:
     return 'That file does not exist', 404
   except NotFound:
-    return 'That file does not exist', 404
+    return 'That file was not yet uploaded', 404
 
 
 def donwload_zip_format_files():
