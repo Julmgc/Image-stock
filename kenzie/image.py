@@ -148,22 +148,11 @@ def donwload_zip_format_files():
   try:
     type_file = request.args.get('file_type')
     file_type_uppercase = type_file.upper()
-    rate_compression = int(request.args.get('compression_rate'))
-    list_files_type = []
-    directory =  f'./images-used/{file_type_uppercase}'
-    for filename in os.listdir(directory):
-      f = os.path.join(directory, filename)
-      if os.path.isfile(f):
-        list_files_type.append(f)
+    rate_compression = request.args.get('compression_rate')
+    os.system(f'zip -{rate_compression} -r zipped_file.zip ./images-used/{file_type_uppercase}')
+    os.system('mv ./zipped_file.zip /tmp')
 
-    file_name = tempfile.NamedTemporaryFile(mode='w+b', delete=True)
-    zipObj = ZipFile(file_name, 'w',  compresslevel=rate_compression) 
-    for file in list_files_type:
-      zipObj.write(file)
-
-    zipObj.close()
-    
-    return flask.send_file(file_name.name, attachment_filename=file_name.name, as_attachment=True)
+    return flask.send_file('/tmp/zipped_file.zip' , attachment_filename='zipped_file.zip', as_attachment=True)
 
   except FileNotFoundError:
     return 'Directory currently empty', 404
