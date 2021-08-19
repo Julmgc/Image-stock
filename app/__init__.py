@@ -1,3 +1,4 @@
+import zipfile
 from flask import Flask, jsonify, request, send_from_directory, render_template
 from werkzeug.exceptions import NotFound
 from werkzeug.utils import secure_filename
@@ -5,10 +6,12 @@ import os
 import glob
 from os import listdir
 from os.path import isfile, join
-
+import tempfile
 from dotenv import get_key
 from kenzie import image
 from zipfile import Path, ZipFile
+import flask
+import uuid
 import logging
 logger = logging.getLogger('ftpuploader')
 
@@ -58,11 +61,15 @@ def download_dir_as_zip():
       f = os.path.join(directory, filename)
       if os.path.isfile(f):
         list_files_type.append(f)
-    zipObj = ZipFile('jpg.zip', 'w')
+
+    file_name = tempfile.NamedTemporaryFile(mode='w+b', delete=True)
+    zipObj = ZipFile(file_name, 'w')
     for file in list_files_type:
       zipObj.write(file)
     zipObj.close()
-    return 'it worked'
+    return flask.send_file(file_name.name, attachment_filename=file_name.name, as_attachment=True)
+
+
   except Exception as e:
     return str(e)
  
