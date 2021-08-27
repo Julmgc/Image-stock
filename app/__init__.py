@@ -25,14 +25,14 @@ def list_files():
   return image.get_all_files()
 
 
-@app.route('/files/<string:tipo>', methods=['GET'])
-def list_files_by_tipo(tipo: str):
-  return image.get_file_by_format(tipo)
+@app.route('/files/<string:type>', methods=['GET'])
+def list_files_by_type(type: str):
+  return image.get_file_by_format(type)
 
 
-@app.route("/download/<path:name>")
-def download_file(name):
-  return image.download_specific_file(name)
+@app.route("/download/<path:file_name>")
+def download_file(file_name):
+  return image.download_specific_file(file_name)
 
 
 @app.route('/download-zip', methods=['GET'])
