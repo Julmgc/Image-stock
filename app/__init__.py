@@ -1,5 +1,5 @@
 import os
-from kenzie import image
+from services import image
 from flask import Flask
 import logging
 logger = logging.getLogger('ftpuploader')
