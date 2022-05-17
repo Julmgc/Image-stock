@@ -1,6 +1,6 @@
 ## <font size="7">**Image stock**</font>
 
-​​### <font color="gree"> App that uploads, saves and downloads images(png, jpg and gif format) in server folder(disk) </font> Saves a movie
+​​### <font color="gree"> API that uploads, saves and downloads images(png, jpg and gif format) in server folder(disk) </font> Saves a movie
 
 ## <font size="6">Base URL </font>
 
